@@ -1,5 +1,6 @@
 import {promisify} from 'util';
 import crypto from 'crypto';
+import { Options, Results } from './types';
 
 const randomBytesAsync = promisify(crypto.randomBytes);
 
@@ -9,7 +10,7 @@ const distinguishableCharacters = 'CDEHKMPRTUWXY012458'.split('');
 const asciiPrintableCharacters = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'.split('');
 const alphanumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('');
 
-const generateForCustomCharacters = (length, characters) => {
+const generateForCustomCharacters = (length:number, characters:string|string []) => {
 	// Generating entropy is faster than complex math operations, so we use the simplest way
 	const characterCount = characters.length;
 	const maxValidSelector = (Math.floor(0x10000 / characterCount) * characterCount) - 1; // Using values above this will ruin distribution when using modular division
@@ -36,7 +37,7 @@ const generateForCustomCharacters = (length, characters) => {
 	return string;
 };
 
-const generateForCustomCharactersAsync = async (length, characters) => {
+const generateForCustomCharactersAsync = async (length:number, characters:string|string []) => {
 	// Generating entropy is faster than complex math operations, so we use the simplest way
 	const characterCount = characters.length;
 	const maxValidSelector = (Math.floor(0x10000 / characterCount) * characterCount) - 1; // Using values above this will ruin distribution when using modular division
@@ -63,9 +64,9 @@ const generateForCustomCharactersAsync = async (length, characters) => {
 	return string;
 };
 
-const generateRandomBytes = (byteLength, type, length) => crypto.randomBytes(byteLength).toString(type).slice(0, length);
+const generateRandomBytes = (byteLength:number, type: BufferEncoding | undefined, length:number | undefined) => crypto.randomBytes(byteLength).toString(type).slice(0, length);
 
-const generateRandomBytesAsync = async (byteLength, type, length) => {
+const generateRandomBytesAsync = async (byteLength:number, type:BufferEncoding | undefined, length:number | undefined) => {
 	const buffer = await randomBytesAsync(byteLength);
 	return buffer.toString(type).slice(0, length);
 };
@@ -81,68 +82,72 @@ const allowedTypes = new Set([
 	'alphanumeric'
 ]);
 
-const createGenerator = (generateForCustomCharacters, generateRandomBytes) => ({length, type, characters}) => {
-	if (!(length >= 0 && Number.isFinite(length))) {
-		throw new TypeError('Expected a `length` to be a non-negative finite number');
-	}
+const createGenerator = (generateForCustomCharacters: any, generateRandomBytes: any) => {
+  return ({length, type, characters}: Options) => {
+    if (!(length >= 0 && Number.isFinite(length))) {
+      throw new TypeError('Expected a `length` to be a non-negative finite number');
+    }
+  
+    if (type !== undefined && characters !== undefined) {
+      throw new TypeError('Expected either `type` or `characters`');
+    }
+  
+    if (characters !== undefined && typeof characters !== 'string') {
+      throw new TypeError('Expected `characters` to be string');
+    }
+  
+    if (!allowedTypes.has(type)) {
+      throw new TypeError(`Unknown type: ${type}`);
+    }
+  
+    if (type === undefined && characters === undefined) {
+      type = 'hex';
+    }
+  
+    if (type === 'hex' || (type === undefined && characters === undefined)) {
+      return generateRandomBytes(Math.ceil(length * 0.5), 'hex', length); // Need 0.5 byte entropy per character
+    }
+  
+    if (type === 'base64') {
+      return generateRandomBytes(Math.ceil(length * 0.75), 'base64', length); // Need 0.75 byte of entropy per character
+    }
+  
+    if (type === 'url-safe') {
+      return generateForCustomCharacters(length, urlSafeCharacters);
+    }
+  
+    if (type === 'numeric') {
+      return generateForCustomCharacters(length, numericCharacters);
+    }
+  
+    if (type === 'distinguishable') {
+      return generateForCustomCharacters(length, distinguishableCharacters);
+    }
+  
+    if (type === 'ascii-printable') {
+      return generateForCustomCharacters(length, asciiPrintableCharacters);
+    }
+  
+    if (type === 'alphanumeric') {
+      return generateForCustomCharacters(length, alphanumericCharacters);
+    }
+  
+    // @ts-ignore
+    if (characters.length === 0) {
+      throw new TypeError('Expected `characters` string length to be greater than or equal to 1');
+    }
+    // @ts-ignore
+    if (characters.length > 0x10000) {
+      throw new TypeError('Expected `characters` string length to be less or equal to 65536');
+    }
+    // @ts-ignore
+    return generateForCustomCharacters(length, characters.split(''));
+  }
+}
 
-	if (type !== undefined && characters !== undefined) {
-		throw new TypeError('Expected either `type` or `characters`');
-	}
+// @ts-ignore
+let random:Results = createGenerator(generateForCustomCharacters, generateRandomBytes);
 
-	if (characters !== undefined && typeof characters !== 'string') {
-		throw new TypeError('Expected `characters` to be string');
-	}
+random.async = createGenerator(generateForCustomCharactersAsync, generateRandomBytesAsync);
 
-	if (!allowedTypes.has(type)) {
-		throw new TypeError(`Unknown type: ${type}`);
-	}
-
-	if (type === undefined && characters === undefined) {
-		type = 'hex';
-	}
-
-	if (type === 'hex' || (type === undefined && characters === undefined)) {
-		return generateRandomBytes(Math.ceil(length * 0.5), 'hex', length); // Need 0.5 byte entropy per character
-	}
-
-	if (type === 'base64') {
-		return generateRandomBytes(Math.ceil(length * 0.75), 'base64', length); // Need 0.75 byte of entropy per character
-	}
-
-	if (type === 'url-safe') {
-		return generateForCustomCharacters(length, urlSafeCharacters);
-	}
-
-	if (type === 'numeric') {
-		return generateForCustomCharacters(length, numericCharacters);
-	}
-
-	if (type === 'distinguishable') {
-		return generateForCustomCharacters(length, distinguishableCharacters);
-	}
-
-	if (type === 'ascii-printable') {
-		return generateForCustomCharacters(length, asciiPrintableCharacters);
-	}
-
-	if (type === 'alphanumeric') {
-		return generateForCustomCharacters(length, alphanumericCharacters);
-	}
-
-	if (characters.length === 0) {
-		throw new TypeError('Expected `characters` string length to be greater than or equal to 1');
-	}
-
-	if (characters.length > 0x10000) {
-		throw new TypeError('Expected `characters` string length to be less or equal to 65536');
-	}
-
-	return generateForCustomCharacters(length, characters.split(''));
-};
-
-const cryptoRandomString = createGenerator(generateForCustomCharacters, generateRandomBytes);
-
-cryptoRandomString.async = createGenerator(generateForCustomCharactersAsync, generateRandomBytesAsync);
-
-export default cryptoRandomString;
+export default random;
