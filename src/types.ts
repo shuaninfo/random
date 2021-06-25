@@ -1,13 +1,16 @@
+/**
+ * 类型
+ */
 import {MergeExclusive} from 'type-fest';
 
-interface BaseOptions {
+export interface BaseOptions {
 	/**
 	Length of the returned string.
 	*/
 	length: number;
 }
 
-interface TypeOption {
+export interface TypeOption {
 	/**
 	Use only characters from a predefined set of allowed characters.
 
@@ -48,7 +51,7 @@ interface TypeOption {
 	type?: 'hex' | 'base64' | 'url-safe' | 'numeric' | 'distinguishable' | 'ascii-printable' | 'alphanumeric';
 }
 
-interface CharactersOption {
+export interface CharactersOption {
 	/**
 	Use only characters from a custom set of allowed characters.
 

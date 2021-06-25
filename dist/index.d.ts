@@ -1,5 +1,9 @@
 import { MergeExclusive } from 'type-fest';
 
+/**
+ * 类型
+ */
+
 interface BaseOptions {
     /**
     Length of the returned string.

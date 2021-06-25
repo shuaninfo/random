@@ -1,6 +1,6 @@
 {
 	"name": "@shuaninfo/random",
-	"version": "5.1.0",
+	"version": "5.1.1",
   "private": false,
 	"description": "Generate a cryptographically strong random string",
 	"license": "MIT",
