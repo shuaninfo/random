@@ -18,6 +18,11 @@ $ yarn add @shuaninfo/random
 
 ```js
 import random from '@shuaninfo/random';
+// esm
+import random from '@shuaninfo/random';
+// cjs
+// const random = require('@shuaninfo/random').default
+
 
 random({length: 10});
 //=> '2cf05d94db'

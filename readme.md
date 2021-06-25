@@ -7,13 +7,18 @@ Can be useful for creating an identifier, slug, salt, PIN code, fixture, etc.
 ## Install
 
 ```shell
-$ npm install @shuaninfo/random
+$ npm install @shuaninfo/random -S
+# 或
+$ yarn add @shuaninfo/random
 ```
 
 ## Usage
 
 ```js
+// esm
 import random from '@shuaninfo/random';
+// cjs
+// const random = require('@shuaninfo/random').default
 
 random({length: 10});
 //=> '2cf05d94db'
